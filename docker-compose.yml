@@ -1,0 +1,28 @@
+version: '3.4'
+
+services:
+  consoleapp:
+    image: ${DOCKER_REGISTRY-}consoleapp
+    build:
+      context: .
+      dockerfile: ConsoleApp/Dockerfile
+    environment:
+      - MONGO_URI=mongodb://tempdb/sample
+    depends_on:
+      - db
+    networks:
+      - samplenet
+
+  db:
+    container_name: mongo
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
+    ports:
+      - "27017:27017"
+    networks:
+      samplenet:
+        aliases:
+          - "tempdb"
+
+networks:
+  samplenet:
+    driver: bridge
