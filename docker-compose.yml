@@ -1,11 +1,13 @@
 version: '3.4'
 
 services:
-  consoleapp:
-    image: ${DOCKER_REGISTRY-}consoleapp
+  web:
+    container_name: web
     build:
       context: .
-      dockerfile: ConsoleApp/Dockerfile
+      dockerfile: WebApplication/Dockerfile
+    ports:
+        - "80:80"
     environment:
       - MONGO_URI=mongodb://tempdb/sample
     depends_on:
