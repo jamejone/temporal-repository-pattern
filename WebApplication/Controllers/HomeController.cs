@@ -10,9 +10,35 @@ namespace WebApplication.Controllers
 {
     public class HomeController : Controller
     {
+        private TemporalRepository _repo = new TemporalRepository();
+
         public IActionResult Index()
         {
-            return View();
+            IndexModel model = new IndexModel();
+
+            var result = _repo.GetAll();
+
+            var businessObjectItemList = new List<BusinessObjectItem>();
+            foreach (var item in result)
+            {
+                var businessObjectItem = new BusinessObjectItem()
+                {
+                    ObjectID = item.Id.ToString(),
+                    Name = item.Name
+                };
+                businessObjectItemList.Add(businessObjectItem);
+            }
+
+            model.BusinessObjectItems = businessObjectItemList.ToArray();
+
+            return View(model);
+        }
+
+        public IActionResult Create()
+        {
+            _repo.Create();
+
+            return RedirectToAction("Index");
         }
 
         public IActionResult About()
