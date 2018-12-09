@@ -9,22 +9,60 @@ services:
     ports:
         - "80:80"
     environment:
-      - MONGO_URI=mongodb://tempdb/sample
+      - MONGO_URI=mongodb://mongo-primary/sample
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
-      - db
+      - mongo1
     networks:
       - samplenet
 
-  db:
-    container_name: mongo
-    image: ${DOCKER_REGISTRY-}mongo:4.0.4
+  mongo1:
+    container_name: mongo_primary
+    image: ${DOCKER_REGISTRY-}mongo:3.6.9
     ports:
       - "27017:27017"
+    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
     networks:
       samplenet:
         aliases:
-          - "tempdb"
+          - "mongo-primary"
+
+  mongo2:
+    container_name: mongo_secondary_1
+    image: ${DOCKER_REGISTRY-}mongo:3.6.9
+    ports:
+      - "27018:27017"
+    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
+    networks:
+      samplenet:
+        aliases:
+          - "mongo-secondary-1"
+
+  mongo3:
+    container_name: mongo_secondary_2
+    image: ${DOCKER_REGISTRY-}mongo:3.6.9
+    ports:
+      - "27019:27017"
+    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
+    networks:
+      samplenet:
+        aliases:
+          - "mongo-secondary-2"
+
+  mongosetup:
+    image: ${DOCKER_REGISTRY-}mongo:3.6.9
+    volumes:
+      - ./scripts:/scripts
+    restart: always
+    entrypoint: [ "bash", "/scripts/mongosetup.sh" ]
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    networks:
+      samplenet:
+        aliases:
+          - "mongo-aux"
 
 networks:
   samplenet:
