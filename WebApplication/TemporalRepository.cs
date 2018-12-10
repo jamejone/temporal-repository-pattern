@@ -38,6 +38,7 @@ namespace WebApplication
 
             var settings = MongoClientSettings
                 .FromUrl(MongoUrl.Create(mongoUri));
+            settings.ReadPreference = ReadPreference.Secondary;
 
             var client = new MongoClient(settings);
 
