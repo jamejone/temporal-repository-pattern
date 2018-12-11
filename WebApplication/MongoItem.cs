@@ -11,5 +11,7 @@ namespace WebApplication
         public ObjectId Id { get; set; }
 
         public string Name { get; set; }
+
+        public string Payload { get; set; }
     }
 }

@@ -10,6 +10,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{0DC86505-9355-48F6-AEBA-8D59E00589B5}"
 	ProjectSection(SolutionItems) = preProject
 		scripts\mongosetup.sh = scripts\mongosetup.sh
+		scripts\simulate-network-delay.sh = scripts\simulate-network-delay.sh
 	EndProjectSection
 EndProject
 Global

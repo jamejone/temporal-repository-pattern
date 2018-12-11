@@ -23,13 +23,17 @@ namespace WebApplication
 
             IMongoCollection<MongoItem> collection = database.GetCollection<MongoItem>("SampleCollection");
 
-            var newBusinessObject = new MongoItem()
+            for (int i = 0; i < 5; i++)
             {
-                Id = ObjectId.GenerateNewId(),
-                Name = "Test business object 1"
-            };
+                var newBusinessObject = new MongoItem()
+                {
+                    Id = ObjectId.GenerateNewId(),
+                    Name = "Test business object 1",
+                    Payload = new string('*', 28800)
+                };
 
-            collection.InsertOne(newBusinessObject);
+                collection.InsertOne(newBusinessObject);
+            }
         }
 
         public IEnumerable<MongoItem> GetAll()
