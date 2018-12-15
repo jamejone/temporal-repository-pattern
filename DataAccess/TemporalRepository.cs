@@ -6,7 +6,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 
 
-namespace WebApplication
+namespace DataAccess
 {
     public class TemporalRepository
     {
