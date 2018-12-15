@@ -22,8 +22,8 @@ namespace WebApplication
             var database = client.GetDatabase("SampleDatabase");
 
             IMongoCollection<MongoItem> collection = database.GetCollection<MongoItem>("SampleCollection");
-
-            for (int i = 0; i < 5; i++)
+            
+            for (int i = 0; i < 25; i++)
             {
                 var newBusinessObject = new MongoItem()
                 {
