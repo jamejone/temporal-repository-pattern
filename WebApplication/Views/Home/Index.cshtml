@@ -5,9 +5,11 @@
 }
 
 <div class="row">
-    <h2>Index</h2>
+    <h2>Index (displaying @Model.NumberOfItems items)</h2>
+    <h3>As of @Model.LastOperationTime</h3>
     <div>
-        <a asp-action="Create">Create 25 items</a></div>
+        <a asp-action="Create">Create 25 items</a>
+    </div>
     <table class="table">
         <thead>
             <tr>

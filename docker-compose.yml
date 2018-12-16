@@ -10,6 +10,7 @@ services:
         - "80:80"
     environment:
       - MONGO_URI=mongodb://mongo-primary,mongo-secondary-1,mongo-secondary-2/?replicaSet=rs
+      - MONGO_SECONDARY=mongodb://mongo-primary,mongo-secondary-2/?replicaSet=rs
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - mongo1

@@ -17,10 +17,10 @@ namespace WebApplication.Controllers
         {
             IndexModel model = new IndexModel();
 
-            var result = _repo.GetAll();
+            var response = _repo.GetAll();
 
             var businessObjectItemList = new List<BusinessObjectItem>();
-            foreach (var item in result)
+            foreach (var item in response.Result)
             {
                 var businessObjectItem = new BusinessObjectItem()
                 {
@@ -31,6 +31,10 @@ namespace WebApplication.Controllers
             }
 
             model.BusinessObjectItems = businessObjectItemList.ToArray();
+
+            model.NumberOfItems = response.Result.Count;
+
+            model.LastOperationTime = response.LastOperationTime;
 
             return View(model);
         }

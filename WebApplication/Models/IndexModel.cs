@@ -8,5 +8,9 @@ namespace WebApplication.Models
     public class IndexModel
     {
         public BusinessObjectItem[] BusinessObjectItems { get; set; }
+
+        public int NumberOfItems { get; set; }
+
+        public DateTime LastOperationTime { get; set; }
     }
 }
