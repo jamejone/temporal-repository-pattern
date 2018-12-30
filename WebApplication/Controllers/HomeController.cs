@@ -13,11 +13,11 @@ namespace WebApplication.Controllers
     {
         private TemporalRepository _repo = new TemporalRepository();
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
             IndexModel model = new IndexModel();
 
-            var response = _repo.GetAll();
+            var response = await _repo.GetAllAsync();
 
             var businessObjectItemList = new List<BusinessObjectItem>();
             foreach (var item in response.Result)

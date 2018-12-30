@@ -37,36 +37,61 @@ namespace DataAccess
             }
         }
 
-        public MongoResponse<MongoItem> GetAll()
+        public async Task<MongoResponse<MongoItem>> GetAllAsync()
         {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+
             var response = new MongoResponse<MongoItem>();
 
-            string mongoUri = Environment.GetEnvironmentVariable("MONGO_SECONDARY");
+            string mongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
 
             var settings = MongoClientSettings
                 .FromUrl(MongoUrl.Create(mongoUri));
-            settings.ReadPreference = ReadPreference.Secondary;
+
+            Tag tag = new Tag("secondary", "1");
+            TagSet tagSet = new TagSet(new List<Tag>() { tag });
+            settings.ReadPreference = new ReadPreference(ReadPreferenceMode.Secondary, new List<TagSet>() { tagSet });
             settings.ReadConcern = ReadConcern.Local;
 
             var client = new MongoClient(settings);
 
             var adminDatabase = client.GetDatabase("admin");
 
-            BsonDocument statsDocument = adminDatabase.RunCommand<BsonDocument>(new BsonDocument("replSetGetStatus", 1));
+            BsonDocument statsDocument = adminDatabase.RunCommand<BsonDocument>(new BsonDocument("isMaster", 1), ReadPreference.Secondary);
 
-            BsonValue optime = statsDocument["optimes"]["readConcernMajorityOpTime"]["ts"];
+            BsonValue optime = statsDocument["lastWrite"]["opTime"]["ts"];
             response.LastOperationTime = new DateTime(1970, 1, 1).AddSeconds(optime.AsBsonTimestamp.Timestamp);
+
+            BsonBoolean isSecondary = statsDocument["secondary"] as BsonBoolean;
+            if (!isSecondary.AsBoolean)
+                throw new ApplicationException("Reads are only supposed to be against secondary nodes.");
 
             var database = client.GetDatabase("SampleDatabase");
 
             IMongoCollection<MongoItem> collection = database.GetCollection<MongoItem>("SampleCollection");
 
             var builder = Builders<MongoItem>.Filter;
-            var filter = builder.Where(i => i.Name == "Test business object 1");
 
-            var result = collection.Find(filter).Sort(new SortDefinitionBuilder<MongoItem>() { }.Descending(i => i.Id));
+            var filter = new FilterDefinitionBuilder<MongoItem>().Empty;
 
-            response.Result = result.ToList();
+            var arrayResult = new List<MongoItem>();
+
+            var findQuery = collection
+                .Find(filter)
+                .Sort(new SortDefinitionBuilder<MongoItem>() { }.Descending(i => i.Id))
+                .Project<MongoItem>(Builders<MongoItem>.Projection.Exclude(i => i.Payload));
+
+            await findQuery.ForEachAsync(
+                item =>
+                    {
+                        arrayResult.Add(item);
+                    }
+                );
+
+            timer.Stop();
+            Console.WriteLine($"Mongo GetAll query took: {timer.ElapsedMilliseconds} ms.");
+
+            response.Result = arrayResult;
 
             return response;
         }

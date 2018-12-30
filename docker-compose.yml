@@ -10,7 +10,6 @@ services:
         - "80:80"
     environment:
       - MONGO_URI=mongodb://mongo-primary,mongo-secondary-1,mongo-secondary-2/?replicaSet=rs
-      - MONGO_SECONDARY=mongodb://mongo-primary,mongo-secondary-2/?replicaSet=rs
       - ASPNETCORE_ENVIRONMENT=Development
     depends_on:
       - mongo1
@@ -19,7 +18,7 @@ services:
 
   mongo1:
     container_name: mongo_primary
-    image: ${DOCKER_REGISTRY-}mongo:3.6.9
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
     volumes:
       - ./scripts:/scripts
     cap_add:
@@ -34,7 +33,7 @@ services:
 
   mongo2:
     container_name: mongo_secondary_1
-    image: ${DOCKER_REGISTRY-}mongo:3.6.9
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
       - "27018:27017"
     entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
@@ -45,7 +44,7 @@ services:
 
   mongo3:
     container_name: mongo_secondary_2
-    image: ${DOCKER_REGISTRY-}mongo:3.6.9
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
       - "27019:27017"
     entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
@@ -55,7 +54,7 @@ services:
           - "mongo-secondary-2"
 
   mongosetup:
-    image: ${DOCKER_REGISTRY-}mongo:3.6.9
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
     volumes:
       - ./scripts:/scripts
     restart: always
