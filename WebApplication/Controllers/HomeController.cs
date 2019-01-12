@@ -24,8 +24,7 @@ namespace WebApplication.Controllers
             {
                 var businessObjectItem = new BusinessObjectItem()
                 {
-                    ObjectID = item.Id.ToString(),
-                    Name = item.Name
+                    ObjectID = item.Id.ToString()
                 };
                 businessObjectItemList.Add(businessObjectItem);
             }
@@ -34,7 +33,9 @@ namespace WebApplication.Controllers
 
             model.NumberOfItems = response.Result.Count;
 
-            model.LastOperationTime = response.LastOperationTime;
+            TimeSpan secondaryLag = DateTime.Now - response.LastOperationTime;
+
+            model.SecondaryLagSeconds = secondaryLag.TotalSeconds;
 
             return View(model);
         }

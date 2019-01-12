@@ -29,7 +29,6 @@ namespace DataAccess
                 var newBusinessObject = new MongoItem()
                 {
                     Id = ObjectId.GenerateNewId(),
-                    Name = "Test business object 1",
                     Payload = new string('*', 28800)
                 };
 
@@ -48,16 +47,16 @@ namespace DataAccess
             var settings = MongoClientSettings
                 .FromUrl(MongoUrl.Create(mongoUri));
 
-            Tag tag = new Tag("secondary", "1");
-            TagSet tagSet = new TagSet(new List<Tag>() { tag });
-            settings.ReadPreference = new ReadPreference(ReadPreferenceMode.Secondary, new List<TagSet>() { tagSet });
-            settings.ReadConcern = ReadConcern.Local;
-
             var client = new MongoClient(settings);
 
-            var adminDatabase = client.GetDatabase("admin");
+            Tag tag = new Tag("secondary", "2");
+            TagSet tagSet = new TagSet(new List<Tag>() { tag });
 
-            BsonDocument statsDocument = adminDatabase.RunCommand<BsonDocument>(new BsonDocument("isMaster", 1), ReadPreference.Secondary);
+            var adminDatabase = client.GetDatabase("admin")
+                .WithReadPreference(new ReadPreference(ReadPreferenceMode.Secondary, new List<TagSet>() { tagSet }))
+                .WithReadConcern(ReadConcern.Local);
+
+            BsonDocument statsDocument = adminDatabase.RunCommand<BsonDocument>(new BsonDocument("isMaster", 1), new ReadPreference(ReadPreferenceMode.Secondary, new List<TagSet>() { tagSet }));
 
             BsonValue optime = statsDocument["lastWrite"]["opTime"]["ts"];
             response.LastOperationTime = new DateTime(1970, 1, 1).AddSeconds(optime.AsBsonTimestamp.Timestamp);

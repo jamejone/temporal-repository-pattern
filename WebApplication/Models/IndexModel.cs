@@ -11,6 +11,6 @@ namespace WebApplication.Models
 
         public int NumberOfItems { get; set; }
 
-        public DateTime LastOperationTime { get; set; }
+        public double SecondaryLagSeconds { get; set; }
     }
 }
