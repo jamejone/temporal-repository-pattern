@@ -1,0 +1,30 @@
+﻿@model WebApplication.Models.IndexModel
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="row">
+    <h1 class="display-4">Displaying @Model.NumberOfItems items</h1>
+</div>
+
+<div class="row">
+    <a asp-action="Create">Create 25 items</a>
+</div>
+<div class="row">
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">Object ID</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.BusinessObjectItems)
+            {
+                <tr>
+                    <th scope="row">@item.ObjectID</th>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

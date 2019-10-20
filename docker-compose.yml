@@ -5,7 +5,7 @@ services:
     container_name: web
     build:
       context: .
-      dockerfile: WebApplication/Dockerfile
+      dockerfile: WebApp/Dockerfile
     ports:
         - "80:80"
     environment:
