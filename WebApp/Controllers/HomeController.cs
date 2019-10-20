@@ -12,7 +12,7 @@ namespace WebApplication.Controllers
 {
     public class HomeController : Controller
     {
-        private MongoItemRepository _repo = new MongoItemRepository();
+        private readonly MongoItemRepository _repo = new MongoItemRepository();
 
         public async Task<IActionResult> Index()
         {

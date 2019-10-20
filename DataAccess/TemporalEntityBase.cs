@@ -5,7 +5,7 @@ using System.Text;
 
 namespace DataAccess
 {
-    public abstract class TemporalEntityBase : ITemporalEntity
+    public abstract class TemporalEntityBase
     {
         public ObjectId Id { get; set; }
     }

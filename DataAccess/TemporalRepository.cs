@@ -9,23 +9,30 @@ namespace DataAccess
 {
     public class TemporalRepository<T> where T : TemporalEntityBase
     {
-        private string MongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
+        private readonly string _mongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
 
-        public void Create(T newEntity)
+        private IMongoCollection<T> GetCollection()
         {
-            var settings = MongoClientSettings
-                .FromUrl(MongoUrl.Create(MongoUri));
-            settings.WriteConcern = WriteConcern.Acknowledged;
-
-            var client = new MongoClient(settings);
-
             var mongoEntitySettings = typeof(T).GetCustomAttributes(typeof(MongoEntitySettings), true);
             if (!mongoEntitySettings.Any()) throw new InvalidOperationException("Entity must have a MongoEntitySettings attribute.");
             var mongoEntitySettingsCast = mongoEntitySettings.First() as MongoEntitySettings;
 
+            var settings = MongoClientSettings
+                .FromUrl(MongoUrl.Create(_mongoUri));
+            settings.WriteConcern = WriteConcern.Acknowledged;
+
+            var client = new MongoClient(settings);
+
             var database = client.GetDatabase(mongoEntitySettingsCast.Database);
 
             IMongoCollection<T> collection = database.GetCollection<T>(mongoEntitySettingsCast.Collection);
+
+            return collection;
+        }
+
+        public void Create(T newEntity)
+        {
+            IMongoCollection<T> collection = GetCollection();
 
             collection.InsertOne(newEntity);
         }
@@ -34,18 +41,7 @@ namespace DataAccess
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
 
-            var settings = MongoClientSettings
-                .FromUrl(MongoUrl.Create(MongoUri));
-
-            var client = new MongoClient(settings);
-
-            var mongoEntitySettings = typeof(T).GetCustomAttributes(typeof(MongoEntitySettings), true);
-            if (!mongoEntitySettings.Any()) throw new InvalidOperationException("Entity must have a MongoEntitySettings attribute.");
-            var mongoEntitySettingsCast = mongoEntitySettings.First() as MongoEntitySettings;
-
-            var database = client.GetDatabase(mongoEntitySettingsCast.Database);
-
-            IMongoCollection<T> collection = database.GetCollection<T>(mongoEntitySettingsCast.Collection);
+            IMongoCollection<T> collection = GetCollection();
 
             var filter = new FilterDefinitionBuilder<T>().Empty;
 
