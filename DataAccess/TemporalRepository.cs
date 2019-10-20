@@ -5,69 +5,55 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-
 namespace DataAccess
 {
-    public class TemporalRepository
+    public class TemporalRepository<T> where T : TemporalEntityBase
     {
-        public void Create()
-        {
-            string mongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
+        private string MongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
 
+        public void Create(T newEntity)
+        {
             var settings = MongoClientSettings
-                .FromUrl(MongoUrl.Create(mongoUri));
+                .FromUrl(MongoUrl.Create(MongoUri));
             settings.WriteConcern = WriteConcern.Acknowledged;
 
             var client = new MongoClient(settings);
 
-            var database = client.GetDatabase("SampleDatabase");
+            var mongoEntitySettings = typeof(T).GetCustomAttributes(typeof(MongoEntitySettings), true);
+            if (!mongoEntitySettings.Any()) throw new InvalidOperationException("Entity must have a MongoEntitySettings attribute.");
+            var mongoEntitySettingsCast = mongoEntitySettings.First() as MongoEntitySettings;
 
-            IMongoCollection<MongoItem> collection = database.GetCollection<MongoItem>("SampleCollection");
-            
-            for (int i = 0; i < 25; i++)
-            {
-                var newBusinessObject = new MongoItem()
-                {
-                    Id = ObjectId.GenerateNewId(),
-                    Payload = new string('*', 28800)
-                };
+            var database = client.GetDatabase(mongoEntitySettingsCast.Database);
 
-                collection.InsertOne(newBusinessObject);
-            }
+            IMongoCollection<T> collection = database.GetCollection<T>(mongoEntitySettingsCast.Collection);
+
+            collection.InsertOne(newEntity);
         }
 
-        public async Task<MongoResponse<MongoItem>> GetAllAsync()
+        public async Task<IEnumerable<T>> GetAllAsync()
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
 
-            var response = new MongoResponse<MongoItem>();
-
-            string mongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
-
             var settings = MongoClientSettings
-                .FromUrl(MongoUrl.Create(mongoUri));
+                .FromUrl(MongoUrl.Create(MongoUri));
 
             var client = new MongoClient(settings);
 
-            Tag tag = new Tag("secondary", "2");
-            TagSet tagSet = new TagSet(new List<Tag>() { tag });
+            var mongoEntitySettings = typeof(T).GetCustomAttributes(typeof(MongoEntitySettings), true);
+            if (!mongoEntitySettings.Any()) throw new InvalidOperationException("Entity must have a MongoEntitySettings attribute.");
+            var mongoEntitySettingsCast = mongoEntitySettings.First() as MongoEntitySettings;
 
-            var adminDatabase = client.GetDatabase("admin");
+            var database = client.GetDatabase(mongoEntitySettingsCast.Database);
 
-            var database = client.GetDatabase("SampleDatabase");
+            IMongoCollection<T> collection = database.GetCollection<T>(mongoEntitySettingsCast.Collection);
 
-            IMongoCollection<MongoItem> collection = database.GetCollection<MongoItem>("SampleCollection");
+            var filter = new FilterDefinitionBuilder<T>().Empty;
 
-            var builder = Builders<MongoItem>.Filter;
-
-            var filter = new FilterDefinitionBuilder<MongoItem>().Empty;
-
-            var arrayResult = new List<MongoItem>();
+            var arrayResult = new List<T>();
 
             var findQuery = collection
                 .Find(filter)
-                .Sort(new SortDefinitionBuilder<MongoItem>() { }.Descending(i => i.Id))
-                .Project<MongoItem>(Builders<MongoItem>.Projection.Exclude(i => i.Payload));
+                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
             await findQuery.ForEachAsync(
                 item =>
@@ -79,9 +65,7 @@ namespace DataAccess
             timer.Stop();
             Console.WriteLine($"Mongo GetAll query took: {timer.ElapsedMilliseconds} ms.");
 
-            response.Result = arrayResult;
-
-            return response;
+            return arrayResult;
         }
     }
 }

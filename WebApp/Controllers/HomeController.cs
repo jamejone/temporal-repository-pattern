@@ -12,7 +12,7 @@ namespace WebApplication.Controllers
 {
     public class HomeController : Controller
     {
-        private TemporalRepository _repo = new TemporalRepository();
+        private MongoItemRepository _repo = new MongoItemRepository();
 
         public async Task<IActionResult> Index()
         {
@@ -21,7 +21,7 @@ namespace WebApplication.Controllers
             var response = await _repo.GetAllAsync();
 
             var businessObjectItemList = new List<BusinessObjectItem>();
-            foreach (var item in response.Result)
+            foreach (var item in response)
             {
                 var businessObjectItem = new BusinessObjectItem()
                 {
@@ -32,30 +32,16 @@ namespace WebApplication.Controllers
 
             model.BusinessObjectItems = businessObjectItemList.ToArray();
 
-            model.NumberOfItems = response.Result.Count;
+            model.NumberOfItems = response.Count();
 
             return View(model);
         }
 
         public IActionResult Create()
         {
-            _repo.Create();
+            _repo.CreateMany();
 
             return RedirectToAction("Index");
-        }
-
-        public IActionResult About()
-        {
-            ViewData["Message"] = "Your application description page.";
-
-            return View();
-        }
-
-        public IActionResult Contact()
-        {
-            ViewData["Message"] = "Your contact page.";
-
-            return View();
         }
 
         public IActionResult Privacy()
