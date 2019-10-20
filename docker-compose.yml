@@ -19,13 +19,9 @@ services:
   mongo1:
     container_name: mongo_primary
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
-    volumes:
-      - ./scripts:/scripts
-    cap_add:
-      - NET_ADMIN
     ports:
       - "27017:27017"
-    entrypoint: [ "bash", "/scripts/simulate-network-delay.sh" ]
+    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
     networks:
       samplenet:
         aliases:

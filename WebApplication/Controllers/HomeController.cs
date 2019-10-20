@@ -33,10 +33,6 @@ namespace WebApplication.Controllers
 
             model.NumberOfItems = response.Result.Count;
 
-            TimeSpan secondaryLag = DateTime.Now - response.LastOperationTime;
-
-            model.SecondaryLagSeconds = secondaryLag.TotalSeconds;
-
             return View(model);
         }
 

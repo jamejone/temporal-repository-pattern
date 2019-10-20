@@ -10,7 +10,5 @@ namespace WebApplication.Models
         public BusinessObjectItem[] BusinessObjectItems { get; set; }
 
         public int NumberOfItems { get; set; }
-
-        public double SecondaryLagSeconds { get; set; }
     }
 }

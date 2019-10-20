@@ -1,7 +1,5 @@
 #!/bin/bash
 
-echo "Waiting for nodes to simulate network conditions and start mongod..."
-
 sleep 15
 
 echo "Setting up replica set..."
@@ -38,7 +36,7 @@ mongo --host mongo-primary:27017 <<EOF
     };
     rs.initiate(cfg, { force: true });
     rs.reconfig(cfg, { force: true });
-    db.getMongo().setReadPref('secondary');
+    db.getMongo().setReadPref('primaryPreferred');
 EOF
 
 tail -f /dev/null

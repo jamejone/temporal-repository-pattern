@@ -52,18 +52,7 @@ namespace DataAccess
             Tag tag = new Tag("secondary", "2");
             TagSet tagSet = new TagSet(new List<Tag>() { tag });
 
-            var adminDatabase = client.GetDatabase("admin")
-                .WithReadPreference(new ReadPreference(ReadPreferenceMode.Secondary, new List<TagSet>() { tagSet }))
-                .WithReadConcern(ReadConcern.Local);
-
-            BsonDocument statsDocument = adminDatabase.RunCommand<BsonDocument>(new BsonDocument("isMaster", 1), new ReadPreference(ReadPreferenceMode.Secondary, new List<TagSet>() { tagSet }));
-
-            BsonValue optime = statsDocument["lastWrite"]["opTime"]["ts"];
-            response.LastOperationTime = new DateTime(1970, 1, 1).AddSeconds(optime.AsBsonTimestamp.Timestamp);
-
-            BsonBoolean isSecondary = statsDocument["secondary"] as BsonBoolean;
-            if (!isSecondary.AsBoolean)
-                throw new ApplicationException("Reads are only supposed to be against secondary nodes.");
+            var adminDatabase = client.GetDatabase("admin");
 
             var database = client.GetDatabase("SampleDatabase");
 
