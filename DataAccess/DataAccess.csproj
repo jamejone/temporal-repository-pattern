@@ -7,4 +7,8 @@
   <ItemGroup>
     <PackageReference Include="MongoDB.Driver" Version="2.9.2" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Shared.csproj" />
+  </ItemGroup>
 </Project>

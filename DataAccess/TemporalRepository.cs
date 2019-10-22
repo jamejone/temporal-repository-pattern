@@ -4,12 +4,18 @@ using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Shared;
 
 namespace DataAccess
 {
     public class TemporalRepository<T> where T : TemporalEntityBase
     {
-        private readonly string _mongoUri = Environment.GetEnvironmentVariable("MONGO_URI");
+        private readonly ConfigurationModel _config;
+
+        public TemporalRepository(ConfigurationModel config)
+        {
+            _config = config;
+        }
 
         private IMongoCollection<T> GetCollection()
         {
@@ -18,7 +24,7 @@ namespace DataAccess
             var mongoEntitySettingsCast = mongoEntitySettings.First() as MongoEntitySettings;
 
             var settings = MongoClientSettings
-                .FromUrl(MongoUrl.Create(_mongoUri));
+                .FromUrl(MongoUrl.Create(_config.MongoUri));
             settings.WriteConcern = WriteConcern.Acknowledged;
 
             var client = new MongoClient(settings);

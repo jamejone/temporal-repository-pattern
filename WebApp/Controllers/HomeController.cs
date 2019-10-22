@@ -12,13 +12,18 @@ namespace WebApplication.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly MongoItemRepository _repo = new MongoItemRepository();
+        private readonly MongoItemRepository _mongoItemRepo;
+
+        public HomeController(MongoItemRepository mongoItemRepo)
+        {
+            _mongoItemRepo = mongoItemRepo;
+        }
 
         public async Task<IActionResult> Index()
         {
             IndexModel model = new IndexModel();
 
-            var response = await _repo.GetAllAsync();
+            var response = await _mongoItemRepo.GetAllAsync();
 
             var businessObjectItemList = new List<BusinessObjectItem>();
             foreach (var item in response)
@@ -39,7 +44,7 @@ namespace WebApplication.Controllers
 
         public IActionResult Create()
         {
-            _repo.CreateMany();
+            _mongoItemRepo.CreateMany();
 
             return RedirectToAction("Index");
         }
