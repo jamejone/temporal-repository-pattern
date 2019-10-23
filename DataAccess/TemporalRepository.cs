@@ -8,7 +8,7 @@ using Shared;
 
 namespace DataAccess
 {
-    public class TemporalRepository<T> where T : TemporalEntityBase
+    public class TemporalRepository<T> where T : ITemporalEntity<T>, new()
     {
         private readonly ConfigurationModel _config;
 
@@ -17,28 +17,49 @@ namespace DataAccess
             _config = config;
         }
 
-        private IMongoCollection<T> GetCollection()
+        protected MongoEntitySettings GetMongoEntitySettings()
         {
             var mongoEntitySettings = typeof(T).GetCustomAttributes(typeof(MongoEntitySettings), true);
             if (!mongoEntitySettings.Any()) throw new InvalidOperationException("Entity must have a MongoEntitySettings attribute.");
             var mongoEntitySettingsCast = mongoEntitySettings.First() as MongoEntitySettings;
 
+            return mongoEntitySettingsCast;
+        }
+
+        protected MongoClient GetMongoClient()
+        {
             var settings = MongoClientSettings
                 .FromUrl(MongoUrl.Create(_config.MongoUri));
             settings.WriteConcern = WriteConcern.Acknowledged;
 
             var client = new MongoClient(settings);
 
-            var database = client.GetDatabase(mongoEntitySettingsCast.Database);
+            return client;
+        }
 
-            IMongoCollection<T> collection = database.GetCollection<T>(mongoEntitySettingsCast.Collection);
+        protected IMongoDatabase GetMongoDatabase(string databaseName)
+        {
+            MongoClient client = GetMongoClient();
+
+            IMongoDatabase database = client.GetDatabase(databaseName);
+
+            return database;
+        }
+
+        protected IMongoCollection<T> GetMongoCollection()
+        {
+            var mongoEntitySettings = GetMongoEntitySettings();
+
+            IMongoDatabase database = GetMongoDatabase(mongoEntitySettings.Database);
+
+            IMongoCollection<T> collection = database.GetCollection<T>(mongoEntitySettings.Collection);
 
             return collection;
         }
 
         public void Create(T newEntity)
         {
-            IMongoCollection<T> collection = GetCollection();
+            IMongoCollection<T> collection = GetMongoCollection();
 
             collection.InsertOne(newEntity);
         }
@@ -47,7 +68,7 @@ namespace DataAccess
         {
             var timer = System.Diagnostics.Stopwatch.StartNew();
 
-            IMongoCollection<T> collection = GetCollection();
+            IMongoCollection<T> collection = GetMongoCollection();
 
             var filter = new FilterDefinitionBuilder<T>().Empty;
 

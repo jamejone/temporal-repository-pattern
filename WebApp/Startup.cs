@@ -33,7 +33,7 @@ namespace WebApp
                 .Bind(config);
             services.AddSingleton(config);
 
-            services.AddSingleton<MongoItemRepository>();
+            services.AddSingleton<ExampleItemRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
