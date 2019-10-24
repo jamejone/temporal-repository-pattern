@@ -20,7 +20,7 @@ services:
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
       - "27017:27017"
-    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
+    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs1", "--configsvr", "--port", "27017", "--bind_ip_all" ]
     networks:
       samplenet:
         aliases:
@@ -31,7 +31,7 @@ services:
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
       - "27018:27017"
-    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
+    entrypoint: [ "/usr/bin/mongos", "--configdb", "rs1/mongo-primary:27017", "--port", "27017", "--bind_ip_all" ]
     networks:
       samplenet:
         aliases:
@@ -42,11 +42,33 @@ services:
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
       - "27019:27017"
-    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs", "--bind_ip_all" ]
+    entrypoint: [ "/usr/bin/mongod", "--shardsvr", "--replSet", "rs2", "--port", "27017", "--bind_ip_all" ]
     networks:
       samplenet:
         aliases:
           - "mongo-secondary-2"
+
+  mongo4:
+    container_name: mongo_secondary_3
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
+    ports:
+      - "27020:27017"
+    entrypoint: [ "/usr/bin/mongod", "--shardsvr", "--replSet", "rs3", "--port", "27017", "--bind_ip_all" ]
+    networks:
+      samplenet:
+        aliases:
+          - "mongo-secondary-3"
+
+  mongo5:
+    container_name: mongo_secondary_4
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
+    ports:
+      - "27021:27017"
+    entrypoint: [ "/usr/bin/mongod", "--shardsvr", "--replSet", "rs4", "--port", "27017", "--bind_ip_all" ]
+    networks:
+      samplenet:
+        aliases:
+          - "mongo-secondary-4"
 
   mongosetup:
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
@@ -58,6 +80,8 @@ services:
       - mongo1
       - mongo2
       - mongo3
+      - mongo4
+      - mongo5
     networks:
       samplenet:
         aliases:
