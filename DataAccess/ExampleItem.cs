@@ -18,25 +18,14 @@ namespace DataAccess
 
         public IEnumerable<CreateIndexModel<ExampleItem>> GetIndexes()
         {
-            var index1 = Builders<ExampleItem>.IndexKeys.Ascending(_ => _.PartitionKey);
-
-            var index2 = Builders<ExampleItem>.IndexKeys.Combine(
+            var index1 = Builders<ExampleItem>.IndexKeys.Combine(
                 Builders<ExampleItem>.IndexKeys.Ascending(_ => _.PartitionKey),
                 Builders<ExampleItem>.IndexKeys.Ascending(_ => _.Id));
 
+            var index2 = Builders<ExampleItem>.IndexKeys.Hashed(_ => _.PartitionKey);
+
             yield return new CreateIndexModel<ExampleItem>(index1);
             yield return new CreateIndexModel<ExampleItem>(index2);
-        }
-
-        public BsonDocumentCommand<BsonDocument> GetShardCommand()
-        {
-            var indexCommand = new BsonDocumentCommand<BsonDocument>(
-                new BsonDocument {
-                    { "shardCollection", "ExampleDatabase.ExampleCollection" },
-                    { "key", "PartitionKey" }
-            });
-
-            return indexCommand;
         }
     }
 }

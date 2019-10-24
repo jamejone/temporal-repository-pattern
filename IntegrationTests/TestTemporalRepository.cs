@@ -48,10 +48,6 @@ namespace IntegrationTests
             IEnumerable<CreateIndexModel<T>> indexesToCreate = instance.GetIndexes();
 
             await collection.Indexes.CreateManyAsync(indexesToCreate);
-
-            var shardCommand = instance.GetShardCommand();
-
-            var results = await database.RunCommandAsync(shardCommand);
         }
 
         internal async Task Healthcheck()

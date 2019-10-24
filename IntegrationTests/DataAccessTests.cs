@@ -26,6 +26,7 @@ namespace IntegrationTests
         {
             var testRepo = new TestTemporalRepository<ExampleItem>(_config);
             await testRepo.DropDatabaseAsync();
+            await testRepo.CreateCollectionAsync();
         }
 
         [TearDown]

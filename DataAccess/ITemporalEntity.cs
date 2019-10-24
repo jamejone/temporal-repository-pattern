@@ -9,7 +9,5 @@ namespace DataAccess
         ObjectId Id { get; set; }
 
         IEnumerable<CreateIndexModel<T>> GetIndexes();
-
-        BsonDocumentCommand<BsonDocument> GetShardCommand();
     }
 }
