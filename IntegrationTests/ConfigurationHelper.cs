@@ -12,7 +12,7 @@ namespace IntegrationTests
         {
             return new ConfigurationBuilder()
                 .SetBasePath(outputPath)
-                .AddJsonFile("appsettings.json")
+                .AddJsonFile("appsettings.test.json")
                 .Build();
         }
 
