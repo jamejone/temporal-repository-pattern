@@ -47,7 +47,7 @@ namespace IntegrationTests
         [Test]
         public async Task CreateAndRetrieveItemFromTheDatabase()
         {
-            _repo.Create(new ExampleItem());
+            _repo.Save(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync();
 
@@ -59,7 +59,7 @@ namespace IntegrationTests
         [Test]
         public async Task CreateAndRetrieveItemFromTheDatabaseAsOf_Positive()
         {
-            _repo.Create(new ExampleItem());
+            _repo.Save(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync(DateTime.Now);
 
@@ -71,7 +71,7 @@ namespace IntegrationTests
         [Test]
         public async Task CreateAndRetrieveItemFromTheDatabaseAsOf_Negative()
         {
-            _repo.Create(new ExampleItem());
+            _repo.Save(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync(DateTime.Today - TimeSpan.FromDays(1));
 

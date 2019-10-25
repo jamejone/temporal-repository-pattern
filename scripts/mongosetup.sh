@@ -104,7 +104,8 @@ mongo --host mongo-shard-server:27017 <<EOF
    use ExampleDatabase;
    db.createCollection("ExampleCollection");
    sh.enableSharding("ExampleDatabase");
-   sh.shardCollection("ExampleDatabase.ExampleCollection", { PartitionKey: 1 } );
+   sh.shardCollection("ExampleDatabase.ExampleCollection", { ShardKey: 1 } );
+   db.ExampleCollection.createIndex( { Identifier: 1, Id : -1 } );
 EOF
 
 echo "Done!"

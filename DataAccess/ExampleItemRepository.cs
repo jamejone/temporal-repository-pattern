@@ -21,11 +21,11 @@ namespace DataAccess
                 var newBusinessObject = new ExampleItem()
                 {
                     Id = ObjectId.GenerateNewId(),
-                    PartitionKey = i % numPartitionKeys,
+                    ShardKey = i % numPartitionKeys,
                     Payload = payload
                 };
 
-                this.Create(newBusinessObject);
+                this.Save(newBusinessObject);
             }
         }
     }

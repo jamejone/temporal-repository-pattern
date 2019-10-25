@@ -57,17 +57,23 @@ namespace DataAccess
             return collection;
         }
 
-        public void Create(T newEntity)
+        /// <summary>
+        /// Saves a document to the database. In a temporal data store, 
+        /// all records are immutable. So every save results in a new record
+        /// saved to the database.
+        /// </summary>
+        public void Save(T entity)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
-            collection.InsertOne(newEntity);
+            collection.InsertOne(entity);
         }
 
+        /// <summary>
+        /// Retrieves all the documents for this collection from the database.
+        /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            var timer = System.Diagnostics.Stopwatch.StartNew();
-
             IMongoCollection<T> collection = GetMongoCollection();
 
             var filter = new FilterDefinitionBuilder<T>().Empty;
@@ -84,9 +90,6 @@ namespace DataAccess
                         arrayResult.Add(item);
                     }
                 );
-
-            timer.Stop();
-            Console.WriteLine($"Mongo GetAll query took: {timer.ElapsedMilliseconds} ms.");
 
             return arrayResult;
         }
