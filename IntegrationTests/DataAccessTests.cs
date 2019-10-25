@@ -47,7 +47,8 @@ namespace IntegrationTests
         [Test]
         public async Task CreateAndRetrieveItemFromTheDatabase()
         {
-            _repo.Create(new ExampleItem());
+            //_repo.Create(new ExampleItem());
+            _repo.CreateMany();
 
             var allItems = await _repo.GetAllAsync();
 

@@ -12,12 +12,17 @@ namespace DataAccess
 
         public void CreateMany()
         {
-            for (int i = 0; i < 25; i++)
+            string payload = new string('*', 1024);
+            int payloads = 5 * 1024;
+            int numPartitionKeys = 6;
+
+            for (int i = 0; i < payloads; i++)
             {
                 var newBusinessObject = new ExampleItem()
                 {
                     Id = ObjectId.GenerateNewId(),
-                    Payload = new string('*', 16)
+                    PartitionKey = i % numPartitionKeys,
+                    Payload = payload
                 };
 
                 this.Create(newBusinessObject);

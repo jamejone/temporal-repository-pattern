@@ -97,6 +97,14 @@ mongo --host mongo-shard-server:27017 <<EOF
    sh.addShard("rs1/mongo-replica-set-1:27017");
    sh.addShard("rs2/mongo-replica-set-2:27017");
    sh.addShard("rs3/mongo-replica-set-3:27017");
+   
+   use config;
+   db.settings.save( { _id:"chunksize", value: 1 } );
+   
+   use ExampleDatabase;
+   db.createCollection("ExampleCollection");
+   sh.enableSharding("ExampleDatabase");
+   sh.shardCollection("ExampleDatabase.ExampleCollection", { PartitionKey: 1 } );
 EOF
 
 echo "Done!"
