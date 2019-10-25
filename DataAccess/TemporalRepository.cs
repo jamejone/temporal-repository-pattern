@@ -90,5 +90,33 @@ namespace DataAccess
 
             return arrayResult;
         }
+
+        public async Task<IEnumerable<T>> GetAllAsync(DateTime asOf)
+        {
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var filter = new FilterDefinitionBuilder<T>()
+                .Lt<ObjectId>(_ => _.Id, ObjectId.GenerateNewId(asOf));
+
+            var arrayResult = new List<T>();
+
+            var findQuery = collection
+                .Find(filter)
+                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+            await findQuery.ForEachAsync(
+                item =>
+                {
+                    arrayResult.Add(item);
+                }
+                );
+
+            timer.Stop();
+            Console.WriteLine($"Mongo GetAll query took: {timer.ElapsedMilliseconds} ms.");
+
+            return arrayResult;
+        }
     }
 }
