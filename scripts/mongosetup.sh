@@ -23,8 +23,6 @@ mongo --host mongo-config-server:27017 <<EOF
     rs.reconfig(cfg, { force: true });
 EOF
 
-sleep 15
-
 echo "Setting up mongo-replica-set-1..."
 
 echo SETUP.sh time now: `date +"%T" `
@@ -100,5 +98,7 @@ mongo --host mongo-shard-server:27017 <<EOF
    sh.addShard("rs2/mongo-replica-set-2:27017");
    sh.addShard("rs3/mongo-replica-set-3:27017");
 EOF
+
+echo "Done!"
 
 tail -f /dev/null
