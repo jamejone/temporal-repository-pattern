@@ -25,15 +25,14 @@ namespace IntegrationTests
         public async Task SetUp()
         {
             var testRepo = new TestTemporalRepository<ExampleItem>(_config);
-            await testRepo.DropDatabaseAsync();
-            await testRepo.CreateCollectionAsync();
+            await testRepo.ClearCollectionAsync();
         }
 
         [TearDown]
         public async Task TearDown()
         {
             var testRepo = new TestTemporalRepository<ExampleItem>(_config);
-            await testRepo.DropDatabaseAsync();
+            await testRepo.ClearCollectionAsync();
         }
 
         [Test]
@@ -47,8 +46,8 @@ namespace IntegrationTests
         [Test]
         public async Task CreateAndRetrieveItemFromTheDatabase()
         {
-            //_repo.Create(new ExampleItem());
-            _repo.CreateMany();
+            _repo.Create(new ExampleItem());
+            //_repo.CreateMany();
 
             var allItems = await _repo.GetAllAsync();
 

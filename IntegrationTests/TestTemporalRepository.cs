@@ -15,39 +15,10 @@ namespace IntegrationTests
         {
         }
 
-        public async Task DropDatabaseAsync()
+        public async Task ClearCollectionAsync()
         {
-            var mongoEntitySettings = GetMongoEntitySettings();
-
-            MongoClient client = GetMongoClient();
-
-            await client.DropDatabaseAsync(mongoEntitySettings.Database);
-        }
-
-        public async Task DropCollectionAsync()
-        {
-            var mongoEntitySettings = GetMongoEntitySettings();
-
-            IMongoDatabase database = GetMongoDatabase(mongoEntitySettings.Database);
-
-            await database.DropCollectionAsync(mongoEntitySettings.Collection);
-        }
-
-        public async Task CreateCollectionAsync()
-        {
-            var mongoEntitySettings = GetMongoEntitySettings();
-
-            IMongoDatabase database = GetMongoDatabase(mongoEntitySettings.Database);
-
-            await database.CreateCollectionAsync(mongoEntitySettings.Collection);
-
             IMongoCollection<T> collection = GetMongoCollection();
-
-            var instance = new T();
-
-            IEnumerable<CreateIndexModel<T>> indexesToCreate = instance.GetIndexes();
-
-            await collection.Indexes.CreateManyAsync(indexesToCreate);
+            await collection.DeleteManyAsync(_ => true);
         }
 
         internal async Task Healthcheck()
