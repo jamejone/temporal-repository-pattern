@@ -69,6 +69,20 @@ namespace IntegrationTests
         }
 
         [Test]
+        public async Task Get_AsOf_GetsCorrectEntity()
+        {
+            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            await Task.Delay(2000);
+            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "456" });
+
+            var item = await _repo.Get("abc", DateTime.Now - TimeSpan.FromMilliseconds(1000));
+
+            Assert.IsNotNull(item);
+            Assert.AreEqual("abc", item.Identifier);
+            Assert.AreEqual("123", item.Payload);
+        }
+
+        [Test]
         public async Task GetAll()
         {
             _repo.Save(new ExampleItem());

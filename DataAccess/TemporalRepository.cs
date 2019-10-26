@@ -90,6 +90,27 @@ namespace DataAccess
         }
 
         /// <summary>
+        /// Retrieves the latest version of a given entity.
+        /// </summary>
+        public async Task<T> Get(string identifier, DateTime asOf)
+        {
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var filter = new FilterDefinitionBuilder<T>().And(
+                Builders<T>.Filter.Eq(_ => _.Identifier, identifier),
+                Builders<T>.Filter.Lt(_ => _.Id, ObjectId.GenerateNewId(asOf)));
+
+            var arrayResult = new List<T>();
+
+            var findQuery = collection
+                .Find(filter)
+                .Limit(1)
+                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+            return await findQuery.FirstOrDefaultAsync();
+        }
+
+        /// <summary>
         /// Retrieves all the entities for this collection from the database.
         /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync()
