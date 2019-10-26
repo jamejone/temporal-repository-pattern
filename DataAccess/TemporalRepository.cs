@@ -70,10 +70,31 @@ namespace DataAccess
         }
 
         /// <summary>
-        /// Retrieves all the documents for this collection from the database.
+        /// Retrieves the latest version of a given entity.
+        /// </summary>
+        public async Task<T> Get(string identifier)
+        {
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var filter = new FilterDefinitionBuilder<T>()
+                .Eq(_ => _.Identifier, identifier);
+
+            var arrayResult = new List<T>();
+
+            var findQuery = collection
+                .Find(filter)
+                .Limit(1)
+                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+            return await findQuery.FirstOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Retrieves all the entities for this collection from the database.
         /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync()
         {
+            // TODO: Get latest version of EACH entity.
             IMongoCollection<T> collection = GetMongoCollection();
 
             var filter = new FilterDefinitionBuilder<T>().Empty;
@@ -99,6 +120,7 @@ namespace DataAccess
         /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync(DateTime asOf)
         {
+            // TODO: Get specific version of EACH entity.
             IMongoCollection<T> collection = GetMongoCollection();
 
             var filter = new FilterDefinitionBuilder<T>()

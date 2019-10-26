@@ -45,6 +45,30 @@ namespace IntegrationTests
         }
 
         [Test]
+        public async Task Get()
+        {
+            _repo.Save(new ExampleItem() { Identifier = "abc" });
+
+            var item = await _repo.Get("abc");
+
+            Assert.IsNotNull(item);
+            Assert.AreEqual("abc", item.Identifier);
+        }
+
+        [Test]
+        public async Task Get_GetsLatest()
+        {
+            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "456" });
+
+            var item = await _repo.Get("abc");
+
+            Assert.IsNotNull(item);
+            Assert.AreEqual("abc", item.Identifier);
+            Assert.AreEqual("456", item.Payload);
+        }
+
+        [Test]
         public async Task GetAll()
         {
             _repo.Save(new ExampleItem());
