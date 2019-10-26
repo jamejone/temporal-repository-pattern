@@ -58,7 +58,7 @@ namespace DataAccess
         }
 
         /// <summary>
-        /// Saves a document to the database. In a temporal data store, 
+        /// Saves the entity to the database. In a temporal data store, 
         /// all records are immutable. So every save results in a new record
         /// saved to the database.
         /// </summary>
@@ -90,7 +90,7 @@ namespace DataAccess
         }
 
         /// <summary>
-        /// Retrieves the latest version of a given entity.
+        /// Retrieves the version of a given entity as of the time specified.
         /// </summary>
         public async Task<T> Get(string identifier, DateTime asOf)
         {
@@ -115,25 +115,37 @@ namespace DataAccess
         /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync()
         {
-            // TODO: Get latest version of EACH entity.
             IMongoCollection<T> collection = GetMongoCollection();
 
-            var filter = new FilterDefinitionBuilder<T>().Empty;
+            var emptyFilter = new FilterDefinitionBuilder<T>().Empty;
 
-            var arrayResult = new List<T>();
+            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, emptyFilter);
 
-            var findQuery = collection
-                .Find(filter)
-                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+            var asyncCursor = await distinctQuery;
 
-            await findQuery.ForEachAsync(
-                item =>
-                    {
-                        arrayResult.Add(item);
-                    }
-                );
+            var identifierList = new List<string>();
+            await asyncCursor.ForEachAsync(identifier =>
+            {
+                identifierList.Add(identifier);
+            });
 
-            return arrayResult;
+            var returnList = new List<T>(); // TODO: Use async streams.
+            foreach (string identifier in identifierList)
+            {
+                var filter = new FilterDefinitionBuilder<T>()
+                    .Eq(_ => _.Identifier, identifier);
+
+                var findQuery = collection
+                    .Find(filter)
+                    .Limit(1)
+                    .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+                var result = await findQuery.FirstOrDefaultAsync();
+
+                returnList.Add(result);
+            }
+
+            return returnList;
         }
 
         /// <summary>
@@ -141,26 +153,40 @@ namespace DataAccess
         /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync(DateTime asOf)
         {
-            // TODO: Get specific version of EACH entity.
             IMongoCollection<T> collection = GetMongoCollection();
 
-            var filter = new FilterDefinitionBuilder<T>()
+            var distinctFilter = new FilterDefinitionBuilder<T>()
                 .Lt(_ => _.Id, ObjectId.GenerateNewId(asOf));
 
-            var arrayResult = new List<T>();
+            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, distinctFilter);
 
-            var findQuery = collection
-                .Find(filter)
-                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+            var asyncCursor = await distinctQuery;
 
-            await findQuery.ForEachAsync(
-                item =>
-                {
-                    arrayResult.Add(item);
-                }
-                );
+            var identifierList = new List<string>();
+            await asyncCursor.ForEachAsync(identifier =>
+            {
+                identifierList.Add(identifier);
+            });
 
-            return arrayResult;
+            var returnList = new List<T>(); // TODO: Use async streams.
+            foreach (string identifier in identifierList)
+            {
+                var filter = new FilterDefinitionBuilder<T>()
+                    .And(
+                        Builders<T>.Filter.Eq(_ => _.Identifier, identifier),
+                        Builders<T>.Filter.Lt(_ => _.Id, ObjectId.GenerateNewId(asOf)));
+
+                var findQuery = collection
+                    .Find(filter)
+                    .Limit(1)
+                    .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+                var result = await findQuery.FirstOrDefaultAsync();
+
+                returnList.Add(result);
+            }
+
+            return returnList;
         }
 
         public async Task PurgeHistoricalVersions(DateTime howFarBackToPurge, int minVersionsToKeep = 1)

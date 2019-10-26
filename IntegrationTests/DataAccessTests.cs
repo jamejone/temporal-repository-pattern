@@ -14,26 +14,26 @@ namespace IntegrationTests
     {
         private ConfigurationModel _config;
         ExampleItemRepository _repo;
+        TestTemporalRepository<ExampleItem> _testRepo;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             _config = ConfigurationHelper.GetApplicationConfiguration(TestContext.CurrentContext.TestDirectory);
             _repo = new ExampleItemRepository(_config);
+            _testRepo = new TestTemporalRepository<ExampleItem>(_config);
         }
 
         [SetUp]
         public async Task SetUp()
         {
-            var testRepo = new TestTemporalRepository<ExampleItem>(_config);
-            await testRepo.ClearCollectionAsync();
+            await _testRepo.ClearCollectionAsync();
         }
 
         [TearDown]
         public async Task TearDown()
         {
-            var testRepo = new TestTemporalRepository<ExampleItem>(_config);
-            await testRepo.ClearCollectionAsync();
+            await _testRepo.ClearCollectionAsync();
         }
 
         [Test]
@@ -69,13 +69,13 @@ namespace IntegrationTests
         }
 
         [Test]
-        public async Task Get_AsOf_GetsCorrectEntity()
+        public async Task Get_Temporal_GetsCorrectEntity()
         {
             _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
             await Task.Delay(2000);
             _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "456" });
 
-            var item = await _repo.Get("abc", DateTime.Now - TimeSpan.FromMilliseconds(1000));
+            var item = await _repo.Get("abc", DateTime.Now - TimeSpan.FromMilliseconds(1500));
 
             Assert.IsNotNull(item);
             Assert.AreEqual("abc", item.Identifier);
@@ -83,7 +83,17 @@ namespace IntegrationTests
         }
 
         [Test]
-        public async Task GetAll()
+        public async Task Get_Temporal_Negative()
+        {
+            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
+
+            var item = await _repo.Get("abc", DateTime.Now - TimeSpan.FromDays(1));
+
+            Assert.IsNull(item);
+        }
+
+        [Test]
+        public async Task GetAll_Positive()
         {
             _repo.Save(new ExampleItem());
 
@@ -93,7 +103,7 @@ namespace IntegrationTests
         }
 
         [Test]
-        public async Task TemporalGetAll_Positive()
+        public async Task GetAll_Temporal_Positive()
         {
             _repo.Save(new ExampleItem());
 
@@ -103,13 +113,26 @@ namespace IntegrationTests
         }
 
         [Test]
-        public async Task CreateAndRetrieveItemFromTheDatabaseAsOf_Negative()
+        public async Task GetAll_Temporal_Negative()
         {
             _repo.Save(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromDays(1));
 
             Assert.AreEqual(0, allItems.Count());
+        }
+
+        [Test]
+        public async Task GetAll_Temporal_GetsCorrectEntity()
+        {
+            _repo.Save(new ExampleItem() { Payload = "abc" });
+            await Task.Delay(2000);
+            _repo.Save(new ExampleItem() { Payload = "def" });
+
+            var allItems = await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromMilliseconds(1500));
+
+            Assert.AreEqual(1, allItems.Count());
+            Assert.AreEqual("abc", allItems.First().Payload);
         }
 
         [Test]
@@ -120,7 +143,7 @@ namespace IntegrationTests
 
             await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1));
 
-            var allItems = await _repo.GetAllAsync();
+            var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
             Assert.AreEqual(1, allItems.Count());
         }
@@ -134,7 +157,7 @@ namespace IntegrationTests
 
             await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1), 2);
 
-            var allItems = await _repo.GetAllAsync();
+            var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
             Assert.AreEqual(2, allItems.Count());
         }
@@ -146,7 +169,7 @@ namespace IntegrationTests
 
             await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1));
 
-            var allItems = await _repo.GetAllAsync();
+            var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
             Assert.AreEqual(1, allItems.Count());
         }
@@ -159,7 +182,7 @@ namespace IntegrationTests
 
             await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1), 2);
 
-            var allItems = await _repo.GetAllAsync();
+            var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
             Assert.AreEqual(2, allItems.Count());
         }
@@ -171,7 +194,7 @@ namespace IntegrationTests
 
             await _repo.PurgeHistoricalVersions(DateTime.Now - TimeSpan.FromDays(1));
 
-            var allItems = await _repo.GetAllAsync();
+            var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
             Assert.AreEqual(1, allItems.Count());
         }

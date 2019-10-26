@@ -29,5 +29,27 @@ namespace IntegrationTests
 
             result.ToList();
         }
+
+        internal async Task<IEnumerable<T>> GetAllIncludingAllVersionsAsync()
+        {
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var filter = new FilterDefinitionBuilder<T>().Empty;
+
+            var arrayResult = new List<T>();
+
+            var findQuery = collection
+                .Find(filter)
+                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+            await findQuery.ForEachAsync(
+                item =>
+                {
+                    arrayResult.Add(item);
+                }
+                );
+
+            return arrayResult;
+        }
     }
 }
