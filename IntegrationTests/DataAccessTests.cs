@@ -125,5 +125,17 @@ namespace IntegrationTests
 
             Assert.AreEqual(2, allItems.Count());
         }
+
+        [Test]
+        public async Task PurgeOldRecords_Negative_DoesntDeleteAfterTimeSpecified()
+        {
+            _repo.Save(new ExampleItem());
+
+            await _repo.PurgeHistoricalVersions(DateTime.Now - TimeSpan.FromDays(1));
+
+            var allItems = await _repo.GetAllAsync();
+
+            Assert.AreEqual(1, allItems.Count());
+        }
     }
 }
