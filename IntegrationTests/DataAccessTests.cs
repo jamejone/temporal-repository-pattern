@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration.Json;
 using NUnit.Framework;
 using Shared;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using WebApp;
@@ -90,6 +91,23 @@ namespace IntegrationTests
             var item = await _repo.Get("abc", DateTime.Now - TimeSpan.FromDays(1));
 
             Assert.IsNull(item);
+        }
+
+        [Test]
+        public async Task GetHistory()
+        {
+            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            _repo.Save(new ExampleItem() { Identifier = "def", Payload = "123" });
+            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "456" });
+
+            IEnumerable<ExampleItem> items = await _repo.GetHistory("abc");
+
+            Assert.AreEqual(2, items.Count());
+
+            List<ExampleItem> itemsList = items.ToList();
+
+            Assert.AreEqual("456", itemsList[0].Payload);
+            Assert.AreEqual("123", itemsList[1].Payload);
         }
 
         [Test]

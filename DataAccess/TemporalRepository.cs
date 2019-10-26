@@ -111,7 +111,32 @@ namespace DataAccess
         }
 
         /// <summary>
-        /// Retrieves all the entities for this collection from the database.
+        /// Retrieves the historical states of an entity.
+        /// </summary>
+        public async Task<IEnumerable<T>> GetHistory(string identifier)
+        {
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var filter = new FilterDefinitionBuilder<T>()
+                .Eq(_ => _.Identifier, identifier);
+
+            var arrayResult = new List<T>();
+
+            var findQuery = collection
+                .Find(filter)
+                .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+            var returnList = new List<T>();
+            await findQuery.ForEachAsync(item =>
+            {
+                returnList.Add(item);
+            });
+
+            return returnList;
+        }
+
+        /// <summary>
+        /// Retrieves the latest version of all the entities from the database.
         /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync()
         {
@@ -149,7 +174,7 @@ namespace DataAccess
         }
 
         /// <summary>
-        /// Fetches all records created as of a particular point in time.
+        /// Fetches all entites from the database as of a particular point in time.
         /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync(DateTime asOf)
         {
@@ -189,6 +214,11 @@ namespace DataAccess
             return returnList;
         }
 
+        /// <summary>
+        /// Purges historical versions from the database, keeping only the most recent versions.
+        /// This has a permanent side effect on the database and you will no longer be able to
+        /// reliably retrieve records beyond this date ever again, for which there are no safeguards.
+        /// </summary>
         public async Task PurgeHistoricalVersions(DateTime howFarBackToPurge, int minVersionsToKeep = 1)
         {
             IMongoCollection<T> collection = GetMongoCollection();
