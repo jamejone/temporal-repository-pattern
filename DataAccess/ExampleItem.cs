@@ -12,8 +12,8 @@ namespace DataAccess
     {
         /// <summary>
         /// The MongoDB object ID. This field uniquely identifies the record and 
-        /// contains information about when the object was created. The latter is
-        /// essential for a temporal data store.
+        /// contains information about when the object was created. In a temporal
+        /// data store you can think of this as a version field.
         /// </summary>
         public ObjectId Id { get; set; }
 
@@ -36,7 +36,7 @@ namespace DataAccess
         public IEnumerable<CreateIndexModel<ExampleItem>> GetIndexes()
         {
             var index1 = Builders<ExampleItem>.IndexKeys.Combine(
-                Builders<ExampleItem>.IndexKeys.Ascending(_ => _.ShardKey),
+                Builders<ExampleItem>.IndexKeys.Ascending(_ => _.Identifier),
                 Builders<ExampleItem>.IndexKeys.Ascending(_ => _.Id));
 
             var index2 = Builders<ExampleItem>.IndexKeys.Hashed(_ => _.ShardKey);

@@ -45,27 +45,23 @@ namespace IntegrationTests
         }
 
         [Test]
-        public async Task CreateAndRetrieveItemFromTheDatabase()
+        public async Task GetAll()
         {
             _repo.Save(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync();
 
-            Assert.AreEqual(allItems.Count(), 1);
-
-            Assert.Pass();
+            Assert.AreEqual(1, allItems.Count());
         }
 
         [Test]
-        public async Task CreateAndRetrieveItemFromTheDatabaseAsOf_Positive()
+        public async Task TemporalGetAll_Positive()
         {
             _repo.Save(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync(DateTime.Now);
 
-            Assert.AreEqual(allItems.Count(), 1);
-
-            Assert.Pass();
+            Assert.AreEqual(1, allItems.Count());
         }
 
         [Test]
@@ -73,11 +69,61 @@ namespace IntegrationTests
         {
             _repo.Save(new ExampleItem());
 
-            var allItems = await _repo.GetAllAsync(DateTime.Today - TimeSpan.FromDays(1));
+            var allItems = await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromDays(1));
 
-            Assert.AreEqual(allItems.Count(), 0);
+            Assert.AreEqual(0, allItems.Count());
+        }
 
-            Assert.Pass();
+        [Test]
+        public async Task PurgeOldRecords_Positive()
+        {
+            _repo.Save(new ExampleItem());
+            _repo.Save(new ExampleItem());
+
+            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1));
+
+            var allItems = await _repo.GetAllAsync();
+
+            Assert.AreEqual(1, allItems.Count());
+        }
+
+        [Test]
+        public async Task PurgeOldRecords_Positive_Keep2Versions()
+        {
+            _repo.Save(new ExampleItem());
+            _repo.Save(new ExampleItem());
+            _repo.Save(new ExampleItem());
+
+            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1), 2);
+
+            var allItems = await _repo.GetAllAsync();
+
+            Assert.AreEqual(2, allItems.Count());
+        }
+
+        [Test]
+        public async Task PurgeOldRecords_Negative()
+        {
+            _repo.Save(new ExampleItem());
+
+            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1));
+
+            var allItems = await _repo.GetAllAsync();
+
+            Assert.AreEqual(1, allItems.Count());
+        }
+
+        [Test]
+        public async Task PurgeOldRecords_Negative_Keep2Versions()
+        {
+            _repo.Save(new ExampleItem());
+            _repo.Save(new ExampleItem());
+
+            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1), 2);
+
+            var allItems = await _repo.GetAllAsync();
+
+            Assert.AreEqual(2, allItems.Count());
         }
     }
 }

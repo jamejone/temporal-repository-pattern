@@ -8,6 +8,8 @@ namespace DataAccess
     {
         ObjectId Id { get; set; }
 
+        string Identifier { get; set; }
+
         IEnumerable<CreateIndexModel<T>> GetIndexes();
     }
 }

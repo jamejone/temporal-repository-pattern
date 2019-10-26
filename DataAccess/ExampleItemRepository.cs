@@ -15,6 +15,7 @@ namespace DataAccess
             string payload = new string('*', 1024);
             int payloads = 5 * 1024;
             int numPartitionKeys = 6;
+            int numIdentifiers = 10;
 
             for (int i = 0; i < payloads; i++)
             {
@@ -22,6 +23,7 @@ namespace DataAccess
                 {
                     Id = ObjectId.GenerateNewId(),
                     ShardKey = i % numPartitionKeys,
+                    Identifier = (i % numIdentifiers).ToString(),
                     Payload = payload
                 };
 

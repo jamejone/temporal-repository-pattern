@@ -94,14 +94,15 @@ namespace DataAccess
             return arrayResult;
         }
 
+        /// <summary>
+        /// Fetches all records created as of a particular point in time.
+        /// </summary>
         public async Task<IEnumerable<T>> GetAllAsync(DateTime asOf)
         {
-            var timer = System.Diagnostics.Stopwatch.StartNew();
-
             IMongoCollection<T> collection = GetMongoCollection();
 
             var filter = new FilterDefinitionBuilder<T>()
-                .Lt<ObjectId>(_ => _.Id, ObjectId.GenerateNewId(asOf));
+                .Lt(_ => _.Id, ObjectId.GenerateNewId(asOf));
 
             var arrayResult = new List<T>();
 
@@ -116,10 +117,51 @@ namespace DataAccess
                 }
                 );
 
-            timer.Stop();
-            Console.WriteLine($"Mongo GetAll query took: {timer.ElapsedMilliseconds} ms.");
-
             return arrayResult;
+        }
+
+        public async Task PurgeHistoricalVersions(DateTime howFarBackToPurge, int minVersionsToKeep = 1)
+        {
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var distinctFilter = new FilterDefinitionBuilder<T>()
+                .Lt(_ => _.Id, ObjectId.GenerateNewId(howFarBackToPurge));
+
+            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, distinctFilter);
+
+            var asyncCursor = await distinctQuery;
+
+            var identifierList = new List<string>();
+            await asyncCursor.ForEachAsync(identifier =>
+            {
+                identifierList.Add(identifier);
+            });
+
+            foreach (string identifier in identifierList)
+            {
+                var filter = new FilterDefinitionBuilder<T>()
+                    .And(
+                        Builders<T>.Filter.Eq(_ => _.Identifier, identifier),
+                        Builders<T>.Filter.Lt(_ => _.Id, ObjectId.GenerateNewId(howFarBackToPurge)));
+
+                var findQuery = collection
+                    .Find(filter)
+                    .Skip(minVersionsToKeep - 1)
+                    .Limit(1)
+                    .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
+
+                var result = await findQuery.FirstOrDefaultAsync();
+
+                if (result != null)
+                {
+                    var deleteFilter = new FilterDefinitionBuilder<T>()
+                        .And(
+                            Builders<T>.Filter.Eq(_ => _.Identifier, identifier),
+                            Builders<T>.Filter.Lt(_ => _.Id, result.Id));
+
+                    await collection.DeleteManyAsync(deleteFilter);
+                }
+            }
         }
     }
 }
