@@ -121,7 +121,7 @@ namespace DataAccess
         /// <summary>
         /// Retrieves the historical states of an entity.
         /// </summary>
-        public async Task<IEnumerable<T>> GetHistoryAsync(string identifier)
+        public async IAsyncEnumerable<T> GetHistoryAsync(string identifier)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
@@ -134,21 +134,18 @@ namespace DataAccess
                 .Find(filter)
                 .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
-            var returnList = new List<T>();
-            await _retryPolicy.ExecuteAsync(() => 
-                findQuery.ForEachAsync(item =>
-                {
-                    returnList.Add(item);
-                })
-            );
+            var cursor = await findQuery.ToCursorAsync();
 
-            return returnList;
+            foreach (var item in cursor.ToEnumerable())
+            {
+                yield return item;
+            }
         }
 
         /// <summary>
         /// Retrieves the latest version of all the entities from the database.
         /// </summary>
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async IAsyncEnumerable<T> GetAllAsync()
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
@@ -166,7 +163,6 @@ namespace DataAccess
                 })
             );
 
-            var returnList = new List<T>(); // TODO: Use async streams.
             foreach (string identifier in identifierList)
             {
                 var filter = new FilterDefinitionBuilder<T>()
@@ -179,16 +175,14 @@ namespace DataAccess
 
                 var result = await _retryPolicy.ExecuteAsync(() => findQuery.FirstOrDefaultAsync());
 
-                returnList.Add(result);
+                yield return result;
             }
-
-            return returnList;
         }
 
         /// <summary>
         /// Fetches all entites from the database as of a particular point in time.
         /// </summary>
-        public async Task<IEnumerable<T>> GetAllAsync(DateTime asOf)
+        public async IAsyncEnumerable<T> GetAllAsync(DateTime asOf)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
@@ -207,7 +201,6 @@ namespace DataAccess
                 })
             );
 
-            var returnList = new List<T>(); // TODO: Use async streams.
             foreach (string identifier in identifierList)
             {
                 var filter = new FilterDefinitionBuilder<T>()
@@ -222,10 +215,8 @@ namespace DataAccess
 
                 var result = await _retryPolicy.ExecuteAsync(() => findQuery.FirstOrDefaultAsync());
 
-                returnList.Add(result);
+                yield return result;
             }
-
-            return returnList;
         }
 
         /// <summary>

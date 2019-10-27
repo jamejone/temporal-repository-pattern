@@ -100,14 +100,13 @@ namespace IntegrationTests
             await _repo.SaveAsync(new ExampleItem() { Identifier = "def", Payload = "123" });
             await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "456" });
 
-            IEnumerable<ExampleItem> items = await _repo.GetHistoryAsync("abc");
+            var allItems = new List<ExampleItem>();
+            await _repo.GetHistoryAsync("abc").ForEachAsync(_ => allItems.Add(_));
 
-            Assert.AreEqual(2, items.Count());
+            Assert.AreEqual(2, allItems.Count());
 
-            List<ExampleItem> itemsList = items.ToList();
-
-            Assert.AreEqual("456", itemsList[0].Payload);
-            Assert.AreEqual("123", itemsList[1].Payload);
+            Assert.AreEqual("456", allItems[0].Payload);
+            Assert.AreEqual("123", allItems[1].Payload);
         }
 
         [Test]
@@ -115,7 +114,8 @@ namespace IntegrationTests
         {
             await _repo.SaveAsync(new ExampleItem());
 
-            var allItems = await _repo.GetAllAsync();
+            var allItems = new List<ExampleItem>();
+            await _repo.GetAllAsync().ForEachAsync(_ => allItems.Add(_));
 
             Assert.AreEqual(1, allItems.Count());
         }
@@ -125,7 +125,8 @@ namespace IntegrationTests
         {
             await _repo.SaveAsync(new ExampleItem());
 
-            var allItems = await _repo.GetAllAsync(DateTime.Now);
+            var allItems = new List<ExampleItem>();
+            await _repo.GetAllAsync(DateTime.Now).ForEachAsync(_ => allItems.Add(_));
 
             Assert.AreEqual(1, allItems.Count());
         }
@@ -135,7 +136,8 @@ namespace IntegrationTests
         {
             await _repo.SaveAsync(new ExampleItem());
 
-            var allItems = await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromDays(1));
+            var allItems = new List<ExampleItem>();
+            await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromDays(1)).ForEachAsync(_ => allItems.Add(_));
 
             Assert.AreEqual(0, allItems.Count());
         }
@@ -147,7 +149,8 @@ namespace IntegrationTests
             await Task.Delay(2000);
             await _repo.SaveAsync(new ExampleItem() { Payload = "def" });
 
-            var allItems = await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromMilliseconds(1500));
+            var allItems = new List<ExampleItem>();
+            await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromMilliseconds(1500)).ForEachAsync(_ => allItems.Add(_));
 
             Assert.AreEqual(1, allItems.Count());
             Assert.AreEqual("abc", allItems.First().Payload);
@@ -158,29 +161,35 @@ namespace IntegrationTests
         {
             _repo.CreateMany();
 
-            List<Task> getAllTasks = new List<Task>();
+            var getAllTasks = new List<IAsyncEnumerable<ExampleItem>>();
 
             for (int i = 0; i < 10; i++)
             {
                 getAllTasks.Add(_repo.GetAllAsync());
             }
 
-            Task.WaitAll(getAllTasks.ToArray());
+            getAllTasks.AsParallel().ForAll(async (task) =>
+            {
+                await task.ForEachAsync(_ => { });
+            });
         }
 
         [Test]
-        public async Task GetAll_Temporal_ManyTimes()
+        public void GetAll_Temporal_ManyTimes()
         {
             _repo.CreateMany();
 
-            List<Task> getAllTasks = new List<Task>();
+            var getAllTasks = new List<IAsyncEnumerable<ExampleItem>>();
 
             for (int i = 0; i < 10; i++)
             {
                 getAllTasks.Add(_repo.GetAllAsync(DateTime.Now + TimeSpan.FromSeconds(1)));
             }
 
-            Task.WaitAll(getAllTasks.ToArray());
+            getAllTasks.AsParallel().ForAll(async (task) =>
+            {
+                await task.ForEachAsync(_ => { });
+            });
         }
 
         [Test]
@@ -195,7 +204,8 @@ namespace IntegrationTests
 
             Task.WaitAll(saveTasks.ToArray());
 
-            var allItems = await _repo.GetAllAsync();
+            var allItems = new List<ExampleItem>();
+            await _repo.GetAllAsync().ForEachAsync(_ => allItems.Add(_));
 
             Assert.IsNotNull(allItems);
             Assert.AreEqual(1000, allItems.Count());

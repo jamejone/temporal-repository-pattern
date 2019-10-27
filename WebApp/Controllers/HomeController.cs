@@ -23,21 +23,21 @@ namespace WebApplication.Controllers
         {
             IndexModel model = new IndexModel();
 
-            var response = await _exampleItemRepo.GetAllAsync();
-
             var businessObjectItemList = new List<BusinessObjectItem>();
-            foreach (var item in response)
+            int count = 0;
+            await foreach (var item in _exampleItemRepo.GetAllAsync())
             {
                 var businessObjectItem = new BusinessObjectItem()
                 {
                     ObjectID = item.Id.ToString()
                 };
                 businessObjectItemList.Add(businessObjectItem);
+                count++;
             }
 
             model.BusinessObjectItems = businessObjectItemList.ToArray();
 
-            model.NumberOfItems = response.Count();
+            model.NumberOfItems = count;
 
             return View(model);
         }
