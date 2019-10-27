@@ -134,9 +134,42 @@ namespace DataAccess
                 .Find(filter)
                 .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
-            var cursor = await findQuery.ToCursorAsync();
+            var cursor = await _retryPolicy.ExecuteAsync(() => findQuery.ToCursorAsync());
 
             foreach (var item in cursor.ToEnumerable())
+            {
+                yield return item;
+            }
+        }
+
+        public async IAsyncEnumerable<string> GetAllIdentifiersAsync()
+        {
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var emptyFilter = new FilterDefinitionBuilder<T>().Empty;
+
+            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, emptyFilter);
+
+            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
+
+            foreach (var item in asyncCursor.ToEnumerable())
+            {
+                yield return item;
+            }
+        }
+
+        public async IAsyncEnumerable<string> GetAllIdentifiersAsync(DateTime asOf)
+        {
+            IMongoCollection<T> collection = GetMongoCollection();
+
+            var emptyFilter = new FilterDefinitionBuilder<T>()
+                .Lt(_ => _.Id, ObjectId.GenerateNewId(asOf));
+
+            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, emptyFilter);
+
+            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
+
+            foreach (var item in asyncCursor.ToEnumerable())
             {
                 yield return item;
             }
@@ -149,21 +182,7 @@ namespace DataAccess
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
-            var emptyFilter = new FilterDefinitionBuilder<T>().Empty;
-
-            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, emptyFilter);
-
-            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
-
-            var identifierList = new List<string>();
-            await _retryPolicy.ExecuteAsync(() =>
-                asyncCursor.ForEachAsync(identifier =>
-                {
-                    identifierList.Add(identifier);
-                })
-            );
-
-            foreach (string identifier in identifierList)
+            await foreach (string identifier in GetAllIdentifiersAsync())
             {
                 var filter = new FilterDefinitionBuilder<T>()
                     .Eq(_ => _.Identifier, identifier);
@@ -186,22 +205,7 @@ namespace DataAccess
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
-            var distinctFilter = new FilterDefinitionBuilder<T>()
-                .Lt(_ => _.Id, ObjectId.GenerateNewId(asOf));
-
-            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, distinctFilter);
-
-            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
-
-            var identifierList = new List<string>();
-            await _retryPolicy.ExecuteAsync(() => 
-                asyncCursor.ForEachAsync(identifier =>
-                {
-                    identifierList.Add(identifier);
-                })
-            );
-
-            foreach (string identifier in identifierList)
+            await foreach (string identifier in GetAllIdentifiersAsync(asOf))
             {
                 var filter = new FilterDefinitionBuilder<T>()
                     .And(
@@ -228,22 +232,7 @@ namespace DataAccess
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
-            var distinctFilter = new FilterDefinitionBuilder<T>()
-                .Lt(_ => _.Id, ObjectId.GenerateNewId(howFarBackToPurge));
-
-            var distinctQuery = collection.DistinctAsync(_ => _.Identifier, distinctFilter);
-
-            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
-
-            var identifierList = new List<string>();
-            await _retryPolicy.ExecuteAsync(() =>
-                asyncCursor.ForEachAsync(identifier =>
-                {
-                    identifierList.Add(identifier);
-                })
-            );
-
-            foreach (string identifier in identifierList)
+            await foreach (string identifier in GetAllIdentifiersAsync(howFarBackToPurge))
             {
                 var filter = new FilterDefinitionBuilder<T>()
                     .And(

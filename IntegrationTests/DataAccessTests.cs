@@ -110,6 +110,33 @@ namespace IntegrationTests
         }
 
         [Test]
+        public async Task GetAllIdentifiers()
+        {
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "def", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "456" });
+
+            var allItems = new List<string>();
+            await _repo.GetAllIdentifiersAsync().ForEachAsync(_ => allItems.Add(_));
+
+            Assert.AreEqual(2, allItems.Count());
+        }
+
+        [Test]
+        public async Task GetAllIdentifiers_Temporal()
+        {
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            await Task.Delay(2000);
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "def", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "456" });
+
+            var allItems = new List<string>();
+            await _repo.GetAllIdentifiersAsync(DateTime.Now - TimeSpan.FromMilliseconds(1500)).ForEachAsync(_ => allItems.Add(_));
+
+            Assert.AreEqual(1, allItems.Count());
+        }
+
+        [Test]
         public async Task GetAll_Positive()
         {
             await _repo.SaveAsync(new ExampleItem());
