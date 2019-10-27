@@ -3,6 +3,7 @@ using Shared;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace DataAccess
 {
@@ -17,6 +18,7 @@ namespace DataAccess
             int numPartitionKeys = 6;
             int numIdentifiers = 10;
 
+            var saveList = new List<Task>();
             for (int i = 0; i < payloads; i++)
             {
                 var newBusinessObject = new ExampleItem()
@@ -27,8 +29,10 @@ namespace DataAccess
                     Payload = payload
                 };
 
-                this.Save(newBusinessObject);
+                saveList.Add(this.SaveAsync(newBusinessObject));
             }
+
+            Task.WaitAll(saveList.ToArray());
         }
     }
 }

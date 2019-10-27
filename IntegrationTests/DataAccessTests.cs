@@ -48,9 +48,9 @@ namespace IntegrationTests
         [Test]
         public async Task Get()
         {
-            _repo.Save(new ExampleItem() { Identifier = "abc" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc" });
 
-            var item = await _repo.Get("abc");
+            var item = await _repo.GetAsync("abc");
 
             Assert.IsNotNull(item);
             Assert.AreEqual("abc", item.Identifier);
@@ -59,10 +59,10 @@ namespace IntegrationTests
         [Test]
         public async Task Get_GetsLatest()
         {
-            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
-            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "456" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "456" });
 
-            var item = await _repo.Get("abc");
+            var item = await _repo.GetAsync("abc");
 
             Assert.IsNotNull(item);
             Assert.AreEqual("abc", item.Identifier);
@@ -72,11 +72,11 @@ namespace IntegrationTests
         [Test]
         public async Task Get_Temporal_GetsCorrectEntity()
         {
-            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "123" });
             await Task.Delay(2000);
-            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "456" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "456" });
 
-            var item = await _repo.Get("abc", DateTime.Now - TimeSpan.FromMilliseconds(1500));
+            var item = await _repo.GetAsync("abc", DateTime.Now - TimeSpan.FromMilliseconds(1500));
 
             Assert.IsNotNull(item);
             Assert.AreEqual("abc", item.Identifier);
@@ -86,9 +86,9 @@ namespace IntegrationTests
         [Test]
         public async Task Get_Temporal_Negative()
         {
-            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "123" });
 
-            var item = await _repo.Get("abc", DateTime.Now - TimeSpan.FromDays(1));
+            var item = await _repo.GetAsync("abc", DateTime.Now - TimeSpan.FromDays(1));
 
             Assert.IsNull(item);
         }
@@ -96,11 +96,11 @@ namespace IntegrationTests
         [Test]
         public async Task GetHistory()
         {
-            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "123" });
-            _repo.Save(new ExampleItem() { Identifier = "def", Payload = "123" });
-            _repo.Save(new ExampleItem() { Identifier = "abc", Payload = "456" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "def", Payload = "123" });
+            await _repo.SaveAsync(new ExampleItem() { Identifier = "abc", Payload = "456" });
 
-            IEnumerable<ExampleItem> items = await _repo.GetHistory("abc");
+            IEnumerable<ExampleItem> items = await _repo.GetHistoryAsync("abc");
 
             Assert.AreEqual(2, items.Count());
 
@@ -113,7 +113,7 @@ namespace IntegrationTests
         [Test]
         public async Task GetAll_Positive()
         {
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync();
 
@@ -123,7 +123,7 @@ namespace IntegrationTests
         [Test]
         public async Task GetAll_Temporal_Positive()
         {
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync(DateTime.Now);
 
@@ -133,7 +133,7 @@ namespace IntegrationTests
         [Test]
         public async Task GetAll_Temporal_Negative()
         {
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
             var allItems = await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromDays(1));
 
@@ -143,9 +143,9 @@ namespace IntegrationTests
         [Test]
         public async Task GetAll_Temporal_GetsCorrectEntity()
         {
-            _repo.Save(new ExampleItem() { Payload = "abc" });
+            await _repo.SaveAsync(new ExampleItem() { Payload = "abc" });
             await Task.Delay(2000);
-            _repo.Save(new ExampleItem() { Payload = "def" });
+            await _repo.SaveAsync(new ExampleItem() { Payload = "def" });
 
             var allItems = await _repo.GetAllAsync(DateTime.Now - TimeSpan.FromMilliseconds(1500));
 
@@ -154,12 +154,60 @@ namespace IntegrationTests
         }
 
         [Test]
+        public void GetAll_ManyTimes()
+        {
+            _repo.CreateMany();
+
+            List<Task> getAllTasks = new List<Task>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                getAllTasks.Add(_repo.GetAllAsync());
+            }
+
+            Task.WaitAll(getAllTasks.ToArray());
+        }
+
+        [Test]
+        public async Task GetAll_Temporal_ManyTimes()
+        {
+            _repo.CreateMany();
+
+            List<Task> getAllTasks = new List<Task>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                getAllTasks.Add(_repo.GetAllAsync(DateTime.Now + TimeSpan.FromSeconds(1)));
+            }
+
+            Task.WaitAll(getAllTasks.ToArray());
+        }
+
+        [Test]
+        public async Task Save_ManyEntities()
+        {
+            List<Task> saveTasks = new List<Task>();
+
+            for (int i = 0; i < 1000; i++)
+            {
+                saveTasks.Add(_repo.SaveAsync(new ExampleItem() { Identifier = i.ToString() }));
+            }
+
+            Task.WaitAll(saveTasks.ToArray());
+
+            var allItems = await _repo.GetAllAsync();
+
+            Assert.IsNotNull(allItems);
+            Assert.AreEqual(1000, allItems.Count());
+        }
+
+        [Test]
         public async Task PurgeOldRecords_Positive()
         {
-            _repo.Save(new ExampleItem());
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
-            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1));
+            await _repo.PurgeHistoricalVersionsAsync(DateTime.Now + TimeSpan.FromDays(1));
 
             var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
@@ -169,11 +217,11 @@ namespace IntegrationTests
         [Test]
         public async Task PurgeOldRecords_Positive_Keep2Versions()
         {
-            _repo.Save(new ExampleItem());
-            _repo.Save(new ExampleItem());
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
-            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1), 2);
+            await _repo.PurgeHistoricalVersionsAsync(DateTime.Now + TimeSpan.FromDays(1), 2);
 
             var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
@@ -183,9 +231,9 @@ namespace IntegrationTests
         [Test]
         public async Task PurgeOldRecords_Negative()
         {
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
-            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1));
+            await _repo.PurgeHistoricalVersionsAsync(DateTime.Now + TimeSpan.FromDays(1));
 
             var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
@@ -195,10 +243,10 @@ namespace IntegrationTests
         [Test]
         public async Task PurgeOldRecords_Negative_Keep2Versions()
         {
-            _repo.Save(new ExampleItem());
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
-            await _repo.PurgeHistoricalVersions(DateTime.Now + TimeSpan.FromDays(1), 2);
+            await _repo.PurgeHistoricalVersionsAsync(DateTime.Now + TimeSpan.FromDays(1), 2);
 
             var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 
@@ -208,9 +256,9 @@ namespace IntegrationTests
         [Test]
         public async Task PurgeOldRecords_Negative_DoesntDeleteAfterTimeSpecified()
         {
-            _repo.Save(new ExampleItem());
+            await _repo.SaveAsync(new ExampleItem());
 
-            await _repo.PurgeHistoricalVersions(DateTime.Now - TimeSpan.FromDays(1));
+            await _repo.PurgeHistoricalVersionsAsync(DateTime.Now - TimeSpan.FromDays(1));
 
             var allItems = await _testRepo.GetAllIncludingAllVersionsAsync();
 

@@ -5,16 +5,24 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Shared;
+using Polly;
 
 namespace DataAccess
 {
     public class TemporalRepository<T> where T : ITemporalEntity<T>, new()
     {
         private readonly ConfigurationModel _config;
+        private readonly AsyncPolicy _retryPolicy;
 
         public TemporalRepository(ConfigurationModel config)
         {
             _config = config;
+            
+            _retryPolicy = Policy
+                .Handle<MongoWaitQueueFullException>()
+                .WaitAndRetryAsync(config.NumTransientFaultRetries, retryAttempt =>
+                    TimeSpan.FromSeconds(Math.Log(retryAttempt))
+                 );
         }
 
         protected MongoEntitySettings GetMongoEntitySettings()
@@ -62,17 +70,17 @@ namespace DataAccess
         /// all records are immutable. So every save results in a new record
         /// saved to the database.
         /// </summary>
-        public void Save(T entity)
+        public async Task SaveAsync(T entity)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
-            collection.InsertOne(entity);
+            await _retryPolicy.ExecuteAsync(() => collection.InsertOneAsync(entity));
         }
 
         /// <summary>
         /// Retrieves the latest version of a given entity.
         /// </summary>
-        public async Task<T> Get(string identifier)
+        public async Task<T> GetAsync(string identifier)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
@@ -86,13 +94,13 @@ namespace DataAccess
                 .Limit(1)
                 .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
-            return await findQuery.FirstOrDefaultAsync();
+            return await _retryPolicy.ExecuteAsync(() => findQuery.FirstOrDefaultAsync());
         }
 
         /// <summary>
         /// Retrieves the version of a given entity as of the time specified.
         /// </summary>
-        public async Task<T> Get(string identifier, DateTime asOf)
+        public async Task<T> GetAsync(string identifier, DateTime asOf)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
@@ -107,13 +115,13 @@ namespace DataAccess
                 .Limit(1)
                 .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
-            return await findQuery.FirstOrDefaultAsync();
+            return await _retryPolicy.ExecuteAsync(() => findQuery.FirstOrDefaultAsync());
         }
 
         /// <summary>
         /// Retrieves the historical states of an entity.
         /// </summary>
-        public async Task<IEnumerable<T>> GetHistory(string identifier)
+        public async Task<IEnumerable<T>> GetHistoryAsync(string identifier)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
@@ -127,10 +135,12 @@ namespace DataAccess
                 .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
             var returnList = new List<T>();
-            await findQuery.ForEachAsync(item =>
-            {
-                returnList.Add(item);
-            });
+            await _retryPolicy.ExecuteAsync(() => 
+                findQuery.ForEachAsync(item =>
+                {
+                    returnList.Add(item);
+                })
+            );
 
             return returnList;
         }
@@ -146,13 +156,15 @@ namespace DataAccess
 
             var distinctQuery = collection.DistinctAsync(_ => _.Identifier, emptyFilter);
 
-            var asyncCursor = await distinctQuery;
+            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
 
             var identifierList = new List<string>();
-            await asyncCursor.ForEachAsync(identifier =>
-            {
-                identifierList.Add(identifier);
-            });
+            await _retryPolicy.ExecuteAsync(() =>
+                asyncCursor.ForEachAsync(identifier =>
+                {
+                    identifierList.Add(identifier);
+                })
+            );
 
             var returnList = new List<T>(); // TODO: Use async streams.
             foreach (string identifier in identifierList)
@@ -165,7 +177,7 @@ namespace DataAccess
                     .Limit(1)
                     .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
-                var result = await findQuery.FirstOrDefaultAsync();
+                var result = await _retryPolicy.ExecuteAsync(() => findQuery.FirstOrDefaultAsync());
 
                 returnList.Add(result);
             }
@@ -185,13 +197,15 @@ namespace DataAccess
 
             var distinctQuery = collection.DistinctAsync(_ => _.Identifier, distinctFilter);
 
-            var asyncCursor = await distinctQuery;
+            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
 
             var identifierList = new List<string>();
-            await asyncCursor.ForEachAsync(identifier =>
-            {
-                identifierList.Add(identifier);
-            });
+            await _retryPolicy.ExecuteAsync(() => 
+                asyncCursor.ForEachAsync(identifier =>
+                {
+                    identifierList.Add(identifier);
+                })
+            );
 
             var returnList = new List<T>(); // TODO: Use async streams.
             foreach (string identifier in identifierList)
@@ -206,7 +220,7 @@ namespace DataAccess
                     .Limit(1)
                     .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
-                var result = await findQuery.FirstOrDefaultAsync();
+                var result = await _retryPolicy.ExecuteAsync(() => findQuery.FirstOrDefaultAsync());
 
                 returnList.Add(result);
             }
@@ -219,7 +233,7 @@ namespace DataAccess
         /// This has a permanent side effect on the database and you will no longer be able to
         /// reliably retrieve records beyond this date ever again, for which there are no safeguards.
         /// </summary>
-        public async Task PurgeHistoricalVersions(DateTime howFarBackToPurge, int minVersionsToKeep = 1)
+        public async Task PurgeHistoricalVersionsAsync(DateTime howFarBackToPurge, int minVersionsToKeep = 1)
         {
             IMongoCollection<T> collection = GetMongoCollection();
 
@@ -228,13 +242,15 @@ namespace DataAccess
 
             var distinctQuery = collection.DistinctAsync(_ => _.Identifier, distinctFilter);
 
-            var asyncCursor = await distinctQuery;
+            var asyncCursor = await _retryPolicy.ExecuteAsync(() => distinctQuery);
 
             var identifierList = new List<string>();
-            await asyncCursor.ForEachAsync(identifier =>
-            {
-                identifierList.Add(identifier);
-            });
+            await _retryPolicy.ExecuteAsync(() =>
+                asyncCursor.ForEachAsync(identifier =>
+                {
+                    identifierList.Add(identifier);
+                })
+            );
 
             foreach (string identifier in identifierList)
             {
@@ -249,7 +265,7 @@ namespace DataAccess
                     .Limit(1)
                     .Sort(new SortDefinitionBuilder<T>() { }.Descending(i => i.Id));
 
-                var result = await findQuery.FirstOrDefaultAsync();
+                var result = await _retryPolicy.ExecuteAsync(() => findQuery.FirstOrDefaultAsync());
 
                 if (result != null)
                 {
@@ -258,7 +274,7 @@ namespace DataAccess
                             Builders<T>.Filter.Eq(_ => _.Identifier, identifier),
                             Builders<T>.Filter.Lt(_ => _.Id, result.Id));
 
-                    await collection.DeleteManyAsync(deleteFilter);
+                    await _retryPolicy.ExecuteAsync(() => collection.DeleteManyAsync(deleteFilter));
                 }
             }
         }

@@ -8,5 +8,7 @@ namespace Shared
     public class ConfigurationModel
     {
         public string MongoUri { get; set; }
+
+        public int NumTransientFaultRetries { get; set; }
     }
 }
