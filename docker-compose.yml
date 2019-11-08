@@ -10,34 +10,32 @@ services:
         - "80:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    depends_on:
-      - mongo1
     networks:
       - samplenet
 
-  mongo1:
-    container_name: mongo_config_server
-    image: ${DOCKER_REGISTRY-}mongo:4.0.4
-    ports:
-      - "27017:27017"
-    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs_config", "--configsvr", "--port", "27017", "--bind_ip_all" ]
-    networks:
-      samplenet:
-        aliases:
-          - "mongo-config-server"
-
-  mongo2:
+  mongo_shard_server:
     container_name: mongo_shard_server
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
-      - "27018:27017"
+      - "27017:27017"
     entrypoint: [ "/usr/bin/mongos", "--configdb", "rs_config/mongo-config-server:27017", "--port", "27017", "--bind_ip_all" ]
     networks:
       samplenet:
         aliases:
           - "mongo-shard-server"
 
-  mongo3:
+  mongo_config_server:
+    container_name: mongo_config_server
+    image: ${DOCKER_REGISTRY-}mongo:4.0.4
+    ports:
+      - "27018:27017"
+    entrypoint: [ "/usr/bin/mongod", "--replSet", "rs_config", "--configsvr", "--port", "27017", "--bind_ip_all" ]
+    networks:
+      samplenet:
+        aliases:
+          - "mongo-config-server"
+
+  mongo_replica_set_1:
     container_name: mongo_replica_set_1
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
@@ -48,7 +46,7 @@ services:
         aliases:
           - "mongo-replica-set-1"
 
-  mongo4:
+  mongo_replica_set_2:
     container_name: mongo_replica_set_2
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
@@ -59,7 +57,7 @@ services:
         aliases:
           - "mongo-replica-set-2"
 
-  mongo5:
+  mongo_replica_set_3:
     container_name: mongo_replica_set_3
     image: ${DOCKER_REGISTRY-}mongo:4.0.4
     ports:
@@ -77,11 +75,11 @@ services:
     restart: always
     entrypoint: [ "bash", "/scripts/mongosetup.sh" ]
     depends_on:
-      - mongo1
-      - mongo2
-      - mongo3
-      - mongo4
-      - mongo5
+      - mongo_config_server
+      - mongo_shard_server
+      - mongo_replica_set_1
+      - mongo_replica_set_2
+      - mongo_replica_set_3
     networks:
       samplenet:
         aliases:
